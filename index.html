@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <h1 class="title">Daily Dashboard</h1>
+      <div class="datetime">
+        <div id="date" class="date"></div>
+        <div id="time" class="time"></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card weather-card">
+      <h2 class="card-title">今日のひとこと</h2>
+      <p id="greeting" class="greeting"></p>
+    </section>
+
+    <div class="grid">
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">スケジュール</h2>
+          <span id="schedule-count" class="badge">0</span>
+        </div>
+
+        <form id="schedule-form" class="schedule-form">
+          <input
+            type="time"
+            id="schedule-time"
+            required
+            class="input input-time"
+          />
+          <input
+            type="text"
+            id="schedule-text"
+            placeholder="予定を入力..."
+            required
+            class="input input-text"
+            maxlength="100"
+          />
+          <button type="submit" class="btn btn-primary">追加</button>
+        </form>
+
+        <ul id="schedule-list" class="schedule-list"></ul>
+        <p id="schedule-empty" class="empty-message">予定はまだありません</p>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">今日のニュース</h2>
+          <button id="refresh-news" class="btn btn-ghost" type="button">更新</button>
+        </div>
+        <ul id="news-list" class="news-list"></ul>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <small>© Daily Dashboard</small>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
