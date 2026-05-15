@@ -1,0 +1,70 @@
+name: Dashboard Automation
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # 30分おき
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "実行ジョブ (news / todo / learn / all)"
+        required: false
+        default: "all"
+
+defaults:
+  run:
+    working-directory: automation
+
+jobs:
+  news:
+    if: ${{ github.event_name == 'schedule' || inputs.job == 'news' || inputs.job == 'all' || inputs.job == '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: automation/package.json
+      - run: npm install --no-audit --no-fund
+      - run: npm run news
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: claude-sonnet-4-6
+          NEWS_THRESHOLD: "60"
+
+  todo:
+    if: ${{ github.event_name == 'schedule' || inputs.job == 'todo' || inputs.job == 'all' || inputs.job == '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: automation/package.json
+      - run: npm install --no-audit --no-fund
+      - run: npm run todo
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: claude-sonnet-4-6
+          MS_TENANT_ID: ${{ secrets.MS_TENANT_ID }}
+          MS_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
+          MS_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
+          MS_REFRESH_TOKEN: ${{ secrets.MS_REFRESH_TOKEN }}
+
+  learn:
+    if: ${{ github.event_name == 'schedule' || inputs.job == 'learn' || inputs.job == 'all' || inputs.job == '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: automation/package.json
+      - run: npm install --no-audit --no-fund
+      - run: npm run learn
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
