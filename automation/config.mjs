@@ -16,7 +16,24 @@ export const DB = {
     databaseId: "b06060ad74b64a34ad9990ad2e240622",
     dataSourceId: "57424560-a5ce-4bd7-8905-893072b85113",
   },
+  slack: {
+    databaseId: "3a7933c505754214bf9c7b8205941e29",
+    dataSourceId: "453567de-ef79-46d9-ae1d-eddeaba4f6cd",
+  },
 };
+
+// Slack のユーザーID（自分）。MCPで確認済みの値を既定にする
+export const SLACK_USER_ID = process.env.SLACK_USER_ID || "U02D2CUDT2Q";
+
+// チャンネル名（小文字）→ 領域 マッピング（部分一致、上から評価）
+export const CHANNEL_DOMAIN_RULES = [
+  { match: ["セキュリティ", "security", "ssl"], domain: "セキュリティ" },
+  { match: ["air"], domain: "AIR" },
+  { match: ["人事", "hr", "新卒", "採用"], domain: "人事" },
+  { match: ["役員", "exec", "bod", "board"], domain: "役員" },
+  { match: ["広報", "pr", "メディア", "ir"], domain: "広報" },
+  { match: ["aidx", "生成ai", "ai"], domain: "AIDX" },
+];
 
 // Yahoo!ニュース 主要RSS（カテゴリ別公式フィード）
 // https://news.yahoo.co.jp/rss

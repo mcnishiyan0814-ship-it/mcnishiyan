@@ -8,6 +8,7 @@ Notion ダッシュボードを自動更新するスクリプト群。GitHub Act
 | ------------ | ---------------------------------------------------------------- |
 | `news.mjs`   | Yahoo!ニュース RSS → キーワード絞り込み → Claude判定 → Notion投入 |
 | `todo.mjs`   | Outlook (Microsoft Graph) → Claude分析 → TODO登録                |
+| `slack.mjs`  | 自分宛 Slack メンション → Claudeでカテゴリ/領域分類 → Notion     |
 | `learn.mjs`  | ニュースDBの承認/却下 → 学習ログへ転写 → 次回プロンプトに使用    |
 
 ## Notion 側 (作成済み)
@@ -16,6 +17,7 @@ Notion ダッシュボードを自動更新するスクリプト群。GitHub Act
 
 - `📰 ニュース` (databaseId: `b4503d855b614b25b51a61e1ebc74fdb`)
 - `✅ TODO`   (databaseId: `54d712b5440d4e698737e19a2c2f6782`)
+- `💬 Slackメンション` (databaseId: `3a7933c505754214bf9c7b8205941e29`)
 - `🔑 キーワード設定` (databaseId: `b1094664ba754bdba15efa34af86671c`)
 - `📈 学習ログ` (databaseId: `b06060ad74b64a34ad9990ad2e240622`)
 
@@ -39,7 +41,21 @@ Notion ダッシュボードを自動更新するスクリプト群。GitHub Act
 
 https://console.anthropic.com で API key を発行
 
-### 4. GitHub Secrets
+### 4. Slack (User Token)
+
+Slackの `search.messages` を使うため **User Token (xoxp-)** が必要です。
+
+1. https://api.slack.com/apps → Create New App → From scratch
+2. OAuth & Permissions → "User Token Scopes" に追加:
+   - `search:read` (検索)
+   - `users:read` (ユーザー名解決, 任意)
+   - `channels:read` `groups:read` `im:read` `mpim:read` (チャンネル名解決, 任意)
+3. Install to Workspace → 同意 → 発行された **User OAuth Token (xoxp-)** を取得
+4. ワークスペース管理者の承認が必要な場合は申請
+
+> 注: Bot Token (xoxb-) では `search.messages` は使えないため、必ず User Token を使ってください。
+
+### 5. GitHub Secrets
 
 リポジトリの Settings → Secrets and variables → Actions で以下を登録:
 
@@ -49,8 +65,10 @@ https://console.anthropic.com で API key を発行
 - `MS_CLIENT_ID`
 - `MS_CLIENT_SECRET`
 - `MS_REFRESH_TOKEN`
+- `SLACK_USER_TOKEN` (xoxp- で始まるトークン)
+- `SLACK_USER_ID` (任意。未設定なら U02D2CUDT2Q を既定値で使用)
 
-### 5. キーワード初期投入
+### 6. キーワード初期投入
 
 Notion の `🔑 キーワード設定` DB に、追いかけたいキーワードを追加 (有効=チェック)。
 例: 「生成AI」「Claude」「GMO」「セキュリティ」など。

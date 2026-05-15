@@ -80,6 +80,41 @@ export async function judgeNews({ article, keywords, examples }) {
   };
 }
 
+export async function classifySlackMention({ text, channel, from }) {
+  const res = await anthropic.messages.create({
+    model: MODEL,
+    max_tokens: 400,
+    system:
+      "あなたはSlackメッセージを分類するアシスタントです。出力はJSONのみ。",
+    messages: [
+      {
+        role: "user",
+        content: [
+          "次のSlackメンションを分類してください。",
+          `チャンネル: ${channel}`,
+          `差出人: ${from}`,
+          `本文: ${text}`,
+          "",
+          "出力スキーマ:",
+          "{",
+          '  "category": "報告|依頼|リマインド|その他 のいずれか",',
+          '  "summary": "30文字以内の要旨（タイトル用）",',
+          '  "intent": "発信者の意図を1文で"',
+          "}",
+          "",
+          "判定基準:",
+          "- 依頼: アクションを求めている (確認/対応/レビュー依頼など)",
+          "- 報告: 完了報告・進捗共有・情報共有",
+          "- リマインド: 期限・締切の催促、再周知",
+          "- 上記に当てはまらないものは その他",
+        ].join("\n"),
+      },
+    ],
+  });
+  const text2 = res.content.find((c) => c.type === "text")?.text ?? "{}";
+  return extractJson(text2);
+}
+
 export async function classifyEmail({ subject, from, snippet }) {
   const res = await anthropic.messages.create({
     model: MODEL,

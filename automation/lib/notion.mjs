@@ -66,3 +66,12 @@ export async function emailUrlExists(databaseId, url) {
   });
   return r.results.length > 0;
 }
+
+export async function linkExists(databaseId, url) {
+  const r = await notion.databases.query({
+    database_id: databaseId,
+    filter: { property: "リンク", url: { equals: url } },
+    page_size: 1,
+  });
+  return r.results.length > 0;
+}
