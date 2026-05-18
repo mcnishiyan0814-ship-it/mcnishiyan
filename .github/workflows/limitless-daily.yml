@@ -1,0 +1,35 @@
+name: Limitless Daily Summary
+
+on:
+  schedule:
+    # 毎朝 7:00 JST (= 22:00 UTC 前日) に前日のライフログを要約
+    - cron: "0 22 * * *"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "対象日 (YYYY-MM-DD)。空欄なら前日(JST)"
+        required: false
+        default: ""
+
+defaults:
+  run:
+    working-directory: automation
+
+jobs:
+  summarize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: automation/package.json
+      - run: npm install --no-audit --no-fund
+      - run: node limitless.mjs ${{ inputs.date }}
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: claude-sonnet-4-6
+          LIMITLESS_API_KEY: ${{ secrets.LIMITLESS_API_KEY }}
+          LIMITLESS_TZ: Asia/Tokyo

@@ -20,6 +20,10 @@ export const DB = {
     databaseId: "3a7933c505754214bf9c7b8205941e29",
     dataSourceId: "453567de-ef79-46d9-ae1d-eddeaba4f6cd",
   },
+  limitless: {
+    databaseId: "642dea6cbd8641b89003ee45b0675193",
+    dataSourceId: "19a7e486-db0a-4335-afeb-a2fef7966c57",
+  },
 };
 
 // Slack のユーザーID（自分）。MCPで確認済みの値を既定にする

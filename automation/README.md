@@ -9,6 +9,7 @@ Notion ダッシュボードを自動更新するスクリプト群。GitHub Act
 | `news.mjs`   | Yahoo!ニュース RSS → キーワード絞り込み → Claude判定 → Notion投入 |
 | `todo.mjs`   | Outlook (Microsoft Graph) → Claude分析 → TODO登録                |
 | `slack.mjs`  | 自分宛 Slack メンション → Claudeでカテゴリ/領域分類 → Notion     |
+| `limitless.mjs` | Limitless 前日ライフログ → Claudeで要約 → Notion (毎朝7時 JST)  |
 | `learn.mjs`  | ニュースDBの承認/却下 → 学習ログへ転写 → 次回プロンプトに使用    |
 
 ## Notion 側 (作成済み)
@@ -18,6 +19,7 @@ Notion ダッシュボードを自動更新するスクリプト群。GitHub Act
 - `📰 ニュース` (databaseId: `b4503d855b614b25b51a61e1ebc74fdb`)
 - `✅ TODO`   (databaseId: `54d712b5440d4e698737e19a2c2f6782`)
 - `💬 Slackメンション` (databaseId: `3a7933c505754214bf9c7b8205941e29`)
+- `🎙️ ライフログ要約` (databaseId: `642dea6cbd8641b89003ee45b0675193`)
 - `🔑 キーワード設定` (databaseId: `b1094664ba754bdba15efa34af86671c`)
 - `📈 学習ログ` (databaseId: `b06060ad74b64a34ad9990ad2e240622`)
 
@@ -67,6 +69,7 @@ Slackの `search.messages` を使うため **User Token (xoxp-)** が必要で�
 - `MS_REFRESH_TOKEN`
 - `SLACK_USER_TOKEN` (xoxp- で始まるトークン)
 - `SLACK_USER_ID` (任意。未設定なら U02D2CUDT2Q を既定値で使用)
+- `LIMITLESS_API_KEY` (https://limitless.ai → Settings → API Keys で発行)
 
 ### 6. キーワード初期投入
 
