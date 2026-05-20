@@ -7,6 +7,7 @@ import {
   GOOGLE_NEWS_LANG,
   FALLBACK_QUERIES,
   NEWS_RELEVANCE_THRESHOLD,
+  NEWS_WINDOW_HOURS,
 } from "./config.mjs";
 import { notion, queryAll, getProp, urlExists } from "./lib/notion.mjs";
 import { judgeNews } from "./lib/claude.mjs";
@@ -14,7 +15,9 @@ import { judgeNews } from "./lib/claude.mjs";
 const parser = new XMLParser({ ignoreAttributes: false });
 
 async function fetchGoogleNewsQuery(query) {
-  const url = `${GOOGLE_NEWS_BASE}/search?q=${encodeURIComponent(query)}&${GOOGLE_NEWS_LANG}`;
+  // when:24h を付けて Google News 側でも 24 時間に絞る（保険）
+  const q = `${query} when:${NEWS_WINDOW_HOURS}h`;
+  const url = `${GOOGLE_NEWS_BASE}/search?q=${encodeURIComponent(q)}&${GOOGLE_NEWS_LANG}`;
   const res = await fetch(url, {
     headers: { "User-Agent": "Mozilla/5.0 dashboard-bot" },
   });
@@ -101,15 +104,23 @@ async function main() {
 
   const all = (await Promise.all(queries.map(fetchGoogleNewsQuery))).flat();
 
+  // 24h 以前の記事を弾く（コード側の最終確認）
+  const cutoff = Date.now() - NEWS_WINDOW_HOURS * 60 * 60 * 1000;
+  const recent = all.filter((a) => {
+    if (!a.pubDate) return false; // 日付不明は安全側に倒して除外
+    return new Date(a.pubDate).getTime() >= cutoff;
+  });
+  console.log(`Fetched ${all.length}, within ${NEWS_WINDOW_HOURS}h: ${recent.length}`);
+
   // URL重複除去（同じ記事が複数クエリでヒット）
   const seen = new Set();
   const dedupedLocal = [];
-  for (const a of all) {
+  for (const a of recent) {
     if (!a.url || seen.has(a.url)) continue;
     seen.add(a.url);
     dedupedLocal.push(a);
   }
-  console.log(`Fetched ${all.length}, deduped locally to ${dedupedLocal.length}`);
+  console.log(`After local dedup: ${dedupedLocal.length}`);
 
   // Notion 上で既に取り込み済みの URL を弾く
   const fresh = [];

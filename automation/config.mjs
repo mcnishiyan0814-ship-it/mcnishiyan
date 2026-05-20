@@ -53,6 +53,9 @@ export const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
 // 関連度がこの値以上の記事のみNotionへ投入
 export const NEWS_RELEVANCE_THRESHOLD = Number(process.env.NEWS_THRESHOLD || 60);
 
+// 取り込み対象の時間ウィンドウ（時間）。pubDate がこの値より古い記事は捨てる
+export const NEWS_WINDOW_HOURS = Number(process.env.NEWS_WINDOW_HOURS || 24);
+
 // GMOサインの差出人パターン
 export const GMO_SIGN_SENDERS = [
   "noreply@gmosign.com",
