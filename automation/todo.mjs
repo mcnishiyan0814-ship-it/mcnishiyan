@@ -48,7 +48,7 @@ async function createTodo(msg, parsed) {
       タスク: { title: [{ text: { content: (parsed.task || msg.subject).slice(0, 200) } }] },
       ステータス: { select: { name: "未着手" } },
       優先度: { select: { name: parsed.priority || "中" } },
-      ソース: { select: { name: "Outlook(GMOサイン)" } },
+      発信元: { select: { name: "Outlook(GMOサイン)" } },
       期限: parsed.due_date ? { date: { start: parsed.due_date } } : { date: null },
       差出人: {
         rich_text: [
@@ -57,7 +57,7 @@ async function createTodo(msg, parsed) {
       },
       件名: { rich_text: [{ text: { content: msg.subject || "" } }] },
       サマリ: { rich_text: [{ text: { content: parsed.summary || "" } }] },
-      元メールURL: { url: msg.webLink },
+      リンク: { url: msg.webLink },
     },
   });
 }

@@ -61,7 +61,7 @@ export async function urlExists(databaseId, url) {
 export async function emailUrlExists(databaseId, url) {
   const r = await notion.databases.query({
     database_id: databaseId,
-    filter: { property: "元メールURL", url: { equals: url } },
+    filter: { property: "リンク", url: { equals: url } },
     page_size: 1,
   });
   return r.results.length > 0;
