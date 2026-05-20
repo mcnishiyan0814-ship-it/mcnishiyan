@@ -1,59 +1,75 @@
-// X API v2 から @m_kumagai の最近の投稿を取得し、Notionに反映。
+// Apify の Tweet Scraper Actor で @m_kumagai の投稿を取得し、Notionに反映。
 // - 24時間以内の投稿は「最新24h=true」、それ以前は false
 // - 既存ツイートIDはスキップ（重複防止）
 // - 既存DB上で「最新24h=true」かつ古くなったものは false に下げる
+//
+// Apify Actor: https://apify.com/apidojo/tweet-scraper
+// 同期実行 + データセット取得を1リクエストで行う:
+//   POST https://api.apify.com/v2/acts/apidojo~tweet-scraper/run-sync-get-dataset-items?token=...
 import { DB, X_USERNAME } from "./config.mjs";
 import { notion, queryAll, getProp } from "./lib/notion.mjs";
 
-const BEARER = process.env.X_BEARER_TOKEN;
-if (!BEARER) {
-  console.error("Missing X_BEARER_TOKEN");
+const APIFY_TOKEN = process.env.APIFY_TOKEN;
+if (!APIFY_TOKEN) {
+  console.error("Missing APIFY_TOKEN");
   process.exit(1);
 }
 
-const API = "https://api.twitter.com/2";
+const ACTOR = process.env.APIFY_ACTOR || "apidojo~tweet-scraper";
+const MAX_TWEETS = Number(process.env.MAX_TWEETS || 50);
 
-async function xApi(path, params = {}) {
-  const url = new URL(API + path);
-  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, String(v));
-  const r = await fetch(url, { headers: { Authorization: `Bearer ${BEARER}` } });
-  if (!r.ok) throw new Error(`X API ${path} failed: ${r.status} ${await r.text()}`);
-  return r.json();
-}
-
-async function getUserId(username) {
-  if (process.env.X_USER_ID) return process.env.X_USER_ID;
-  const j = await xApi(`/users/by/username/${username}`);
-  return j.data?.id;
-}
-
-async function fetchRecentTweets(userId) {
-  // 直近100件まで取得。24h以内+それ以前の境目判定に十分。
-  // referenced_tweets でリポスト/引用/返信を判別、public_metrics で各種カウント
-  const j = await xApi(`/users/${userId}/tweets`, {
-    max_results: 100,
-    "tweet.fields": "created_at,public_metrics,referenced_tweets,text",
-    exclude: "", // replies/retweets 含む
+async function fetchTweetsFromApify() {
+  const url = `https://api.apify.com/v2/acts/${ACTOR}/run-sync-get-dataset-items?token=${encodeURIComponent(APIFY_TOKEN)}`;
+  const body = {
+    twitterHandles: [X_USERNAME],
+    maxItems: MAX_TWEETS,
+    sort: "Latest",
+    tweetLanguage: "ja",
+  };
+  console.log(`Calling Apify actor ${ACTOR} for @${X_USERNAME} ...`);
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
   });
-  return j.data ?? [];
+  if (!r.ok) {
+    throw new Error(`Apify call failed: ${r.status} ${await r.text()}`);
+  }
+  const items = await r.json();
+  return Array.isArray(items) ? items : [];
 }
 
-function classifyType(tweet) {
-  const refs = tweet.referenced_tweets ?? [];
-  for (const r of refs) {
-    if (r.type === "retweeted") return "リポスト";
-    if (r.type === "quoted") return "引用";
-    if (r.type === "replied_to") return "返信";
-  }
-  return "投稿";
+// Apify tweet item の差分を吸収して共通スキーマに正規化
+function normalize(item) {
+  // フィールド命名は actor のバージョンで揺れがあるためいくつかフォールバック
+  const id =
+    item.id || item.tweetId || item.id_str || item.url?.split("/status/")[1]?.split("?")[0];
+  const text = item.text || item.fullText || item.full_text || "";
+  const createdAt =
+    item.createdAt || item.created_at || item.timestamp || item.date || null;
+  const link =
+    item.url ||
+    item.tweetUrl ||
+    (id ? `https://x.com/${X_USERNAME}/status/${id}` : null);
+  const metrics = {
+    like: item.likeCount ?? item.favorite_count ?? item.likes ?? 0,
+    retweet: item.retweetCount ?? item.retweets ?? 0,
+    reply: item.replyCount ?? item.replies ?? 0,
+    view: item.viewCount ?? item.views ?? 0,
+  };
+  let type = "投稿";
+  if (item.isRetweet || item.retweeted_tweet) type = "リポスト";
+  else if (item.isQuote || item.quoted_tweet) type = "引用";
+  else if (item.isReply || item.in_reply_to_status_id) type = "返信";
+  return { id, text, createdAt, link, metrics, type };
 }
 
 function within24h(isoTime) {
+  if (!isoTime) return false;
   return Date.now() - new Date(isoTime).getTime() <= 24 * 60 * 60 * 1000;
 }
 
-async function existingTweetIds() {
-  // 既にDBに入っている全ツイートIDをセットで返す
+async function existingTweets() {
   const pages = await queryAll(DB.kumagai.databaseId, undefined, [
     { property: "投稿日時", direction: "descending" },
   ]);
@@ -65,35 +81,28 @@ async function existingTweetIds() {
   return map;
 }
 
-function buildLink(tweetId) {
-  return `https://x.com/${X_USERNAME}/status/${tweetId}`;
-}
-
-async function createTweetPage(tweet) {
-  const isRecent = within24h(tweet.created_at);
-  const type = classifyType(tweet);
-  const metrics = tweet.public_metrics ?? {};
+async function createTweetPage(t) {
+  if (!t.id) throw new Error("No tweet id");
+  const isRecent = within24h(t.createdAt);
   return notion.pages.create({
     parent: { database_id: DB.kumagai.databaseId },
-    icon: { type: "emoji", emoji: type === "リポスト" ? "🔁" : type === "引用" ? "💬" : "🐦" },
+    icon: { type: "emoji", emoji: t.type === "リポスト" ? "🔁" : t.type === "引用" ? "💬" : "🐦" },
     properties: {
-      投稿内容: { title: [{ text: { content: (tweet.text || "").slice(0, 200) } }] },
-      投稿日時: { date: { start: tweet.created_at } },
-      タイプ: { select: { name: type } },
-      いいね: { number: metrics.like_count ?? 0 },
-      リポスト: { number: metrics.retweet_count ?? 0 },
-      返信数: { number: metrics.reply_count ?? 0 },
-      閲覧数: { number: metrics.impression_count ?? 0 },
-      リンク: { url: buildLink(tweet.id) },
-      ツイートID: { rich_text: [{ text: { content: tweet.id } }] },
+      投稿内容: { title: [{ text: { content: (t.text || "").slice(0, 200) } }] },
+      投稿日時: t.createdAt ? { date: { start: new Date(t.createdAt).toISOString() } } : { date: null },
+      タイプ: { select: { name: t.type } },
+      いいね: { number: t.metrics.like },
+      リポスト: { number: t.metrics.retweet },
+      返信数: { number: t.metrics.reply },
+      閲覧数: { number: t.metrics.view },
+      リンク: { url: t.link },
+      ツイートID: { rich_text: [{ text: { content: String(t.id) } }] },
       最新24h: { checkbox: isRecent },
     },
   });
 }
 
 async function refreshRecentFlags(existing) {
-  // DB側で「最新24h=true」だが24h経過したものは false に下げる、
-  // および「最新24h=false」だが24h以内（新規取り込み直後の保険）は true に上げる
   for (const [, page] of existing) {
     const postedAt = getProp(page, "投稿日時");
     if (!postedAt) continue;
@@ -109,32 +118,29 @@ async function refreshRecentFlags(existing) {
 }
 
 async function main() {
-  console.log("=== Kumagai X ingest start ===");
-  const userId = await getUserId(X_USERNAME);
-  console.log(`User: @${X_USERNAME} (${userId})`);
-
-  const existing = await existingTweetIds();
+  console.log("=== Kumagai X ingest start (Apify) ===");
+  const existing = await existingTweets();
   console.log(`Existing tweets in Notion: ${existing.size}`);
 
-  const tweets = await fetchRecentTweets(userId);
-  console.log(`Fetched ${tweets.length} tweets`);
+  const raw = await fetchTweetsFromApify();
+  console.log(`Fetched ${raw.length} items from Apify`);
 
   let inserted = 0;
-  for (const t of tweets) {
+  for (const item of raw) {
+    const t = normalize(item);
+    if (!t.id) continue;
     if (existing.has(t.id)) continue;
     try {
       await createTweetPage(t);
       inserted++;
-      const tag = within24h(t.created_at) ? "[24h]" : "[old]";
-      console.log(`  + ${tag} ${classifyType(t)}: ${(t.text || "").slice(0, 60).replace(/\n/g, " ")}`);
+      const tag = within24h(t.createdAt) ? "[24h]" : "[old]";
+      console.log(`  + ${tag} ${t.type}: ${(t.text || "").slice(0, 60).replace(/\n/g, " ")}`);
     } catch (e) {
       console.error(`  ERR tweet ${t.id}: ${e.message}`);
     }
   }
 
-  // 既存行の最新24hフラグを再計算
   await refreshRecentFlags(existing);
-
   console.log(`=== Inserted ${inserted} tweets, flags refreshed ===`);
 }
 

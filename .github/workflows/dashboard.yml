@@ -123,8 +123,10 @@ jobs:
       - run: npm run kumagai
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-          X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          APIFY_ACTOR: apidojo~tweet-scraper
           X_USERNAME: m_kumagai
+          MAX_TWEETS: "50"
 
   learn:
     if: ${{ github.event_name == 'schedule' || inputs.job == 'learn' || inputs.job == 'all' || inputs.job == '' }}

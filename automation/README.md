@@ -74,7 +74,7 @@ Slackの `search.messages` を使うため **User Token (xoxp-)** が必要で�
 - `SLACK_USER_TOKEN` (xoxp- で始まるトークン)
 - `SLACK_USER_ID` (任意。未設定なら U02D2CUDT2Q を既定値で使用)
 - `LIMITLESS_API_KEY` (https://limitless.ai → Settings → API Keys で発行)
-- `X_BEARER_TOKEN` (https://developer.twitter.com の Basic 以上のプランで発行する App-only Bearer Token)
+- `APIFY_TOKEN` (https://console.apify.com/account/integrations の Personal API Token。Apify "apidojo/tweet-scraper" 用)
 
 ### 6. キーワード初期投入
 
