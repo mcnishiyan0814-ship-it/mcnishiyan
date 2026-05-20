@@ -24,7 +24,14 @@ export const DB = {
     databaseId: "642dea6cbd8641b89003ee45b0675193",
     dataSourceId: "19a7e486-db0a-4335-afeb-a2fef7966c57",
   },
+  isms: {
+    databaseId: "93e80f8204a54355a798e08c57ba0d19",
+    dataSourceId: "b89ad090-4edf-48e6-b5de-280587f67e12",
+  },
 };
+
+// ダッシュボードの親ページ ID（今日のイズムのテキスト埋め込み先）
+export const DASHBOARD_PAGE_ID = "3616bc8c-3888-815e-881b-c22b6c562160";
 
 // Slack のユーザーID（自分）。MCPで確認済みの値を既定にする
 export const SLACK_USER_ID = process.env.SLACK_USER_ID || "U02D2CUDT2Q";

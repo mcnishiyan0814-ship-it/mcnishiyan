@@ -10,7 +10,8 @@
     "todo": "node todo.mjs",
     "learn": "node learn.mjs",
     "slack": "node slack.mjs",
-    "limitless": "node limitless.mjs"
+    "limitless": "node limitless.mjs",
+    "ism": "node ism.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",

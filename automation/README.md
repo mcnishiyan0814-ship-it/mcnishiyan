@@ -10,6 +10,7 @@ Notion ダッシュボードを自動更新するスクリプト群。GitHub Act
 | `todo.mjs`   | Outlook (Microsoft Graph) → Claude分析 → TODO登録                |
 | `slack.mjs`  | 自分宛 Slack メンション → Claudeでカテゴリ/領域分類 → Notion     |
 | `limitless.mjs` | Limitless 前日ライフログ → Claudeで要約 → Notion                |
+| `ism.mjs`    | GMOスピリットベンチャー宣言から日付ベースで1件抽選 → ダッシュボード最上部に表示 |
 | `learn.mjs`  | ニュースDBの承認/却下 → 学習ログへ転写 → 次回プロンプトに使用    |
 
 すべて **毎朝 9:00 JST** に一括実行されます (`.github/workflows/dashboard.yml`)。手動実行は GitHub Actions の workflow_dispatch から可能 (job を選択)。
