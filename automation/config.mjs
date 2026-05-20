@@ -39,18 +39,14 @@ export const CHANNEL_DOMAIN_RULES = [
   { match: ["aidx", "生成ai", "ai"], domain: "AIDX" },
 ];
 
-// Yahoo!ニュース 主要RSS（カテゴリ別公式フィード）
-// https://news.yahoo.co.jp/rss
-export const YAHOO_RSS_FEEDS = [
-  { url: "https://news.yahoo.co.jp/rss/topics/top-picks.xml", category: "その他" },
-  { url: "https://news.yahoo.co.jp/rss/topics/domestic.xml", category: "社会" },
-  { url: "https://news.yahoo.co.jp/rss/topics/world.xml", category: "国際" },
-  { url: "https://news.yahoo.co.jp/rss/topics/business.xml", category: "経済" },
-  { url: "https://news.yahoo.co.jp/rss/topics/entertainment.xml", category: "エンタメ" },
-  { url: "https://news.yahoo.co.jp/rss/topics/sports.xml", category: "スポーツ" },
-  { url: "https://news.yahoo.co.jp/rss/topics/it.xml", category: "テック" },
-  { url: "https://news.yahoo.co.jp/rss/topics/science.xml", category: "テック" },
-];
+// Google News RSS
+// キーワード検索: https://news.google.com/rss/search?q=<keyword>&hl=ja&gl=JP&ceid=JP:ja
+// トップ: https://news.google.com/rss?hl=ja&gl=JP&ceid=JP:ja
+export const GOOGLE_NEWS_BASE = "https://news.google.com/rss";
+export const GOOGLE_NEWS_LANG = "hl=ja&gl=JP&ceid=JP:ja";
+
+// 含むキーワードが未設定のときに使うフォールバック検索
+export const FALLBACK_QUERIES = ["AI", "経済", "テック"];
 
 export const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
 

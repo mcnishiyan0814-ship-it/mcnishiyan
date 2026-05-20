@@ -13,7 +13,7 @@ export async function judgeNews({ article, keywords, examples }) {
     {
       type: "text",
       text: [
-        "あなたはニュースキュレーターです。ユーザーが設定したキーワードと過去の承認/却下フィードバックを参考に、Yahoo!ニュースの記事を表示すべきか判定します。",
+        "あなたはニュースキュレーターです。ユーザーが設定したキーワードと過去の承認/却下フィードバックを参考に、Google News の記事を表示すべきか判定します。",
         "",
         "## 必ず守るルール",
         "- 除外キーワードを含む記事は relevance を 0 にする",
@@ -47,7 +47,8 @@ export async function judgeNews({ article, keywords, examples }) {
   const userText = [
     "次の記事を判定してください。",
     `タイトル: ${article.title}`,
-    `カテゴリ(RSS区分): ${article.category}`,
+    `検索クエリ: ${article.query || "(なし)"}`,
+    `配信元: ${article.source || "(不明)"}`,
     `概要: ${article.description || "(なし)"}`,
     `URL: ${article.url}`,
     "",

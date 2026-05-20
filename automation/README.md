@@ -6,7 +6,7 @@ Notion ダッシュボードを自動更新するスクリプト群。GitHub Act
 
 | スクリプト   | 役割                                                             |
 | ------------ | ---------------------------------------------------------------- |
-| `news.mjs`   | Yahoo!ニュース RSS → キーワード絞り込み → Claude判定 → Notion投入 |
+| `news.mjs`   | Google News RSS（キーワード検索） → Claude判定 → Notion投入       |
 | `todo.mjs`   | Outlook (Microsoft Graph) → Claude分析 → TODO登録                |
 | `slack.mjs`  | 自分宛 Slack メンション → Claudeでカテゴリ/領域分類 → Notion     |
 | `limitless.mjs` | Limitless 前日ライフログ → Claudeで要約 → Notion                |

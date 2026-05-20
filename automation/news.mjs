@@ -1,28 +1,48 @@
-// Yahoo!ニュース RSS → Claude判定 → Notion投入
+// Google News RSS → Claude判定 → Notion投入
+// 含むキーワードごとに検索クエリを叩き、結果をマージしてClaudeで関連度を判定する
 import { XMLParser } from "fast-xml-parser";
-import { DB, YAHOO_RSS_FEEDS, NEWS_RELEVANCE_THRESHOLD } from "./config.mjs";
+import {
+  DB,
+  GOOGLE_NEWS_BASE,
+  GOOGLE_NEWS_LANG,
+  FALLBACK_QUERIES,
+  NEWS_RELEVANCE_THRESHOLD,
+} from "./config.mjs";
 import { notion, queryAll, getProp, urlExists } from "./lib/notion.mjs";
 import { judgeNews } from "./lib/claude.mjs";
 
 const parser = new XMLParser({ ignoreAttributes: false });
 
-async function fetchFeed(feed) {
-  const res = await fetch(feed.url, { headers: { "User-Agent": "Mozilla/5.0 dashboard-bot" } });
+async function fetchGoogleNewsQuery(query) {
+  const url = `${GOOGLE_NEWS_BASE}/search?q=${encodeURIComponent(query)}&${GOOGLE_NEWS_LANG}`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": "Mozilla/5.0 dashboard-bot" },
+  });
   if (!res.ok) {
-    console.warn(`RSS fetch failed: ${feed.url} (${res.status})`);
+    console.warn(`Google News fetch failed for "${query}": ${res.status}`);
     return [];
   }
   const xml = await res.text();
   const j = parser.parse(xml);
   const items = j?.rss?.channel?.item ?? [];
-  return (Array.isArray(items) ? items : [items]).map((it) => ({
-    title: String(it.title ?? "").trim(),
-    description: String(it.description ?? "").trim(),
-    url: String(it.link ?? "").trim(),
-    pubDate: it.pubDate ? new Date(it.pubDate).toISOString() : null,
-    source: "Yahoo!ニュース",
-    category: feed.category,
-  }));
+  const list = Array.isArray(items) ? items : [items];
+  return list.map((it) => {
+    // Google News の description は HTML を含むので簡易タグ除去
+    const descRaw = String(it.description ?? "").replace(/<[^>]+>/g, " ");
+    // source タグから配信元を抽出
+    const source =
+      typeof it.source === "object"
+        ? it.source?.["#text"] || it.source?.text || ""
+        : String(it.source ?? "");
+    return {
+      title: String(it.title ?? "").trim(),
+      description: descRaw.replace(/\s+/g, " ").trim().slice(0, 800),
+      url: String(it.link ?? "").trim(),
+      pubDate: it.pubDate ? new Date(it.pubDate).toISOString() : null,
+      source: source || "Google News",
+      query,
+    };
+  });
 }
 
 async function loadKeywords() {
@@ -71,35 +91,36 @@ async function createNewsPage(article, judgment) {
 }
 
 async function main() {
-  console.log("=== News ingest start ===");
+  console.log("=== News ingest start (Google News) ===");
   const [keywords, examples] = await Promise.all([loadKeywords(), loadExamples()]);
   console.log(`Keywords: ${keywords.length}, Examples: ${examples.length}`);
 
-  const includeKw = keywords.filter((k) => k.kind === "含む").map((k) => k.name.toLowerCase());
+  const includeKw = keywords.filter((k) => k.kind === "含む");
+  const queries = includeKw.length === 0 ? FALLBACK_QUERIES : includeKw.map((k) => k.name);
+  console.log(`Queries: ${queries.join(", ")}`);
 
-  const all = (await Promise.all(YAHOO_RSS_FEEDS.map(fetchFeed))).flat();
-  console.log(`Fetched ${all.length} items`);
+  const all = (await Promise.all(queries.map(fetchGoogleNewsQuery))).flat();
 
-  // 先に文字列マッチで粗くフィルタ（含むキーワードが1つでも入っていれば候補）
-  const candidates = includeKw.length === 0
-    ? all
-    : all.filter((a) => {
-        const hay = `${a.title} ${a.description}`.toLowerCase();
-        return includeKw.some((k) => hay.includes(k));
-      });
-  console.log(`After keyword pre-filter: ${candidates.length}`);
+  // URL重複除去（同じ記事が複数クエリでヒット）
+  const seen = new Set();
+  const dedupedLocal = [];
+  for (const a of all) {
+    if (!a.url || seen.has(a.url)) continue;
+    seen.add(a.url);
+    dedupedLocal.push(a);
+  }
+  console.log(`Fetched ${all.length}, deduped locally to ${dedupedLocal.length}`);
 
-  // URL重複除外（DB照会）
+  // Notion 上で既に取り込み済みの URL を弾く
   const fresh = [];
-  for (const c of candidates) {
-    if (!c.url) continue;
+  for (const c of dedupedLocal) {
     if (await urlExists(DB.news.databaseId, c.url)) continue;
     fresh.push(c);
   }
-  console.log(`After dedup: ${fresh.length}`);
+  console.log(`After Notion dedup: ${fresh.length}`);
 
   let inserted = 0;
-  for (const article of fresh.slice(0, 30)) {
+  for (const article of fresh.slice(0, 40)) {
     try {
       const judgment = await judgeNews({ article, keywords, examples });
       if (judgment.relevance < NEWS_RELEVANCE_THRESHOLD) {
