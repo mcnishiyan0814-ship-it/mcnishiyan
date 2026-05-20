@@ -109,6 +109,23 @@ jobs:
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
 
+  kumagai:
+    if: ${{ github.event_name == 'schedule' || inputs.job == 'kumagai' || inputs.job == 'all' || inputs.job == '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: automation/package.json
+      - run: npm install --no-audit --no-fund
+      - run: npm run kumagai
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
+          X_USERNAME: m_kumagai
+
   learn:
     if: ${{ github.event_name == 'schedule' || inputs.job == 'learn' || inputs.job == 'all' || inputs.job == '' }}
     needs: [news]

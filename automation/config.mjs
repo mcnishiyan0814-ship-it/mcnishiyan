@@ -28,7 +28,15 @@ export const DB = {
     databaseId: "93e80f8204a54355a798e08c57ba0d19",
     dataSourceId: "b89ad090-4edf-48e6-b5de-280587f67e12",
   },
+  kumagai: {
+    databaseId: "b1841a2c84114881b9ccefec992e61e3",
+    dataSourceId: "790b43d0-a0bc-48f5-b941-91c1ec2eaedf",
+  },
 };
+
+// 監視するXユーザー
+export const X_USERNAME = process.env.X_USERNAME || "m_kumagai";
+export const X_USER_ID = process.env.X_USER_ID || ""; // 初回ルックアップ後に固定可
 
 // ダッシュボードの親ページ ID（今日のイズムのテキスト埋め込み先）
 export const DASHBOARD_PAGE_ID = "3616bc8c-3888-815e-881b-c22b6c562160";
